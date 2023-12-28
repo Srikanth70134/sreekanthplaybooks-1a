@@ -1,0 +1,68 @@
+- hosts: webservers
+  gather_facts: true
+  become: true
+  vars_files:
+    - ../nginxport.yaml
+  
+  tasks:
+    - name: performing apt update cmd
+      apt: 
+       update_cache: yes
+      when: ansible_os_family == "Redhat"
+
+    - name: upgrade cmd
+      apt:
+       name: "*"
+       state: latest
+        
+    - name: install nginx cmd
+      apt:
+       name: "nginx"
+
+
+    - name: copy default configure file
+      template: 
+        src: "../src/default.j2"
+        dest: "/etc/nginx/sites-available/default"
+      notify: start nginx service
+      tags:
+        - stuff   
+      
+    - name: check if file is exist
+      shell: "ls -l nameversionre1"
+      when: cmd_ls.rc == 2
+      ignore_errors: true
+      register: cmd_ls
+
+    - name: debug
+      debug:
+        var: cmd_ls
+    - name: create a file
+      file:
+        path: /etc/ansible/nameversionre1
+        state: directory
+
+    - name: custom index file to www folder
+      copy:
+        src: "../src/index.html"
+        dest: "/var/www/html"
+      notify: start nginx service     
+      
+
+    - name: custom index file to usr folder
+      copy:
+        src: "../src/index.html"
+        dest: "/usr/share/nginx/html"
+      notify: start nginx service 
+
+    - name: enable nginx service
+      systemd_service:
+        name: nginx
+        enabled: true
+
+  handlers:      
+    - name: start nginx service
+      systemd_service:
+        name: nginx
+        state: restarted  
+      
